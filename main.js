@@ -148,18 +148,19 @@ const drawGhost = () => {
 };
 
 const update = () => {
+  // vuelve a dibujar los puntos, al pacman y los fantas en su nueva posición.
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawDots();
   drawPacman();
   drawGhost();
-  // en cada frame, modificar las variables pacX, pacY para mover el pacman.
-  // para poner/esconder un punto, modificar MAP
 };
 
 update();
+
 let PAUSE = false
 const time = interval(1000); // emits a value every second
 const interal = time.pipe(timeInterval()); // adds timestamp to each emitted value
+// tambien es un observable
 
 const moveGhost = () => {
   ghostX = getXPixPos(ghostMatrixX);
@@ -169,11 +170,7 @@ const moveGhost = () => {
   update();
 }
 
-let ghostSub = interal.subscribe((value) => {
-  moveGhost()
-});
-
-interal.subscribe(() => {
+const checkGhostNextMove = () => {
   const list = [-1, 0, 1].sort((a, b) => 0.5 - Math.random());
   list.forEach((x) => {
     list.forEach((y) => {
@@ -196,6 +193,14 @@ interal.subscribe(() => {
         }
     });
   });
+}
+
+let ghostSub = interal.subscribe((value) => {
+  moveGhost()
+});
+
+interal.subscribe(() => {
+  checkGhostNextMove();
 });
 
 
@@ -228,7 +233,9 @@ const checkDead = (position) => {
         control.sub.unsubscribe();
       })
     })
+    document.getElementById('lose').style.visibility = 'visible';
   }
+
 }
 
 const keyEvent = (control, position) => {
@@ -236,7 +243,7 @@ const keyEvent = (control, position) => {
     filter((event) => event.key === control.key),
   );
   const keySub = keyPress.subscribe(() => {
-    movePac(control.x,control.y, position)
+    movePac(control.x,control.y, position);
     eatDot(position);
     checkDead(position);
   }); 
@@ -247,33 +254,44 @@ Players.forEach((player) => {
   const {position, controls} = player
   controls.forEach((control, index) => { 
   player.controls[index].sub = keyEvent(control, position);
- })
+ });
 })
+
+const pauseGame = () => {
+  ghostSub.unsubscribe();
+  Players.forEach((player) => {
+    player.controls.forEach((control) => {
+      control.sub.unsubscribe();
+    })
+  })
+  document.getElementById('pause').style.visibility = 'visible';
+  PAUSE = true;
+}
+
+const resumeGame = () => {
+  ghostSub = interal.subscribe((value) => {
+    moveGhost()   
+  });
+
+  Players.forEach((player) => {
+    const {position, controls} = player
+    controls.forEach((control, index) => { 
+    player.controls[index].sub = keyEvent(control, position);
+   })
+  })
+  document.getElementById('pause').style.visibility = 'hidden';
+  PAUSE = false;
+}
 
 const keySpace = fromEvent(document, 'keydown').pipe(
   filter((event) => event.keyCode === 32),
 );
 
 keySpace.subscribe(() => {
+  console.info("space")
   if (!PAUSE) {
-    ghostSub.unsubscribe();
-    Players.forEach((player) => {
-      player.controls.forEach((control) => {
-        control.sub.unsubscribe();
-      })
-    })
-    PAUSE = true;
+    pauseGame();
   }else{
-    ghostSub = interal.subscribe((value) => {
-      moveGhost()   
-    });
-
-    Players.forEach((player) => {
-      const {position, controls} = player
-      controls.forEach((control, index) => { 
-      player.controls[index].sub = keyEvent(control, position);
-     })
-    })
-    PAUSE = false;
+    resumeGame();
   }
 });
