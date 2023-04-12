@@ -27,12 +27,13 @@ const getXPixPos = (x) => (x) * POSWIDTH // de 0 a 17
 const getYPixPos = (y) => (y) * POSHEIGHT // de 0 a 8
 
 const PlayerA = {
+  img : "player1.png",
   position:{
-    pacMatrixX : 10,
+    pacMatrixX : 0,
     pacMatrixY : 0,
     pacXMove : 0,
     pacYMove : 1,
-    pacX : getXPixPos(10),
+    pacX : getXPixPos(0),
     pacY : getYPixPos(0),
   },
   controls:[
@@ -42,10 +43,61 @@ const PlayerA = {
   {key:'ArrowRight', x:1, y:0}
 ]}
 
-const Players = [PlayerA]
+const PlayerB = {
+  img : "player2.png",
+  position:{
+    pacMatrixX : 17,
+    pacMatrixY : 0,
+    pacXMove : 0,
+    pacYMove : 1,
+    pacX : getXPixPos(17),
+    pacY : getYPixPos(0),
+  },
+  controls:[
+  {key:'s', x:0, y:1}, 
+  {key:'w', x:0, y:-1}, 
+  {key:'a', x:-1, y:0}, 
+  {key:'d', x:1, y:0}
+]}
 
-let ghostMatrixX = 0;
-let ghostMatrixY = 0;
+const PlayerC = {
+  img : "player3.png",
+  position:{
+    pacMatrixX : 17,
+    pacMatrixY : 8,
+    pacXMove : 0,
+    pacYMove : 1,
+    pacX : getXPixPos(17),
+    pacY : getYPixPos(8),
+  },
+  controls:[
+  {key:'k', x:0, y:1}, 
+  {key:'i', x:0, y:-1}, 
+  {key:'j', x:-1, y:0}, 
+  {key:'l', x:1, y:0}
+]}
+
+const PlayerD = {
+  img : "player4.png",
+  position:{
+    pacMatrixX : 0,
+    pacMatrixY : 8,
+    pacXMove : 0,
+    pacYMove : 1,
+    pacX : getXPixPos(0),
+    pacY : getYPixPos(8),
+  },
+  controls:[
+  {key:'g', x:0, y:1}, 
+  {key:'t', x:0, y:-1}, 
+  {key:'f', x:-1, y:0}, 
+  {key:'h', x:1, y:0}
+]}
+
+const Players = [PlayerA, PlayerB, PlayerC, PlayerD]
+
+let ghostMatrixX = 7;
+let ghostMatrixY = 4;
 let ghostXMove = 1;
 let ghostYMove = 0;
 let ghostX = getXPixPos(ghostMatrixX);
@@ -77,10 +129,12 @@ const drawDots = () => {
 };
 
 const base_image_pac = new Image(1, 1);
-base_image_pac.src = "pacman.png";
+base_image_pac.src = "pacman.jpg";
 
 const drawPacman = () => {
   Players.forEach((player) => {
+    const base_image_pac = new Image(1, 1);
+    base_image_pac.src = player.img;
     const {pacX, pacY} = player.position
     context.drawImage(base_image_pac, pacX + 10, pacY + 10, 30, 30);
   })
@@ -191,7 +245,6 @@ const keyEvent = (control, position) => {
 
 Players.forEach((player) => {
   const {position, controls} = player
-  console.info(player, controls)
   controls.forEach((control, index) => { 
   player.controls[index].sub = keyEvent(control, position);
  })
@@ -202,7 +255,6 @@ const keySpace = fromEvent(document, 'keydown').pipe(
 );
 
 keySpace.subscribe(() => {
-  console.info("space")
   if (!PAUSE) {
     ghostSub.unsubscribe();
     Players.forEach((player) => {
