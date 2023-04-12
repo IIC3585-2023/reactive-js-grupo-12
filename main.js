@@ -148,7 +148,7 @@ const drawGhost = () => {
 };
 
 const update = () => {
-  // vuelve a dibujar los puntos, al pacman y los fantas en su nueva posición.
+  // vuelve a dibujar los puntos, al pacman y los fantamas en su nueva posición.
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawDots();
   drawPacman();
@@ -158,6 +158,7 @@ const update = () => {
 update();
 
 let PAUSE = false
+let LOSE = false
 const time = interval(1000); // emits a value every second
 const interal = time.pipe(timeInterval()); // adds timestamp to each emitted value
 // tambien es un observable
@@ -234,6 +235,7 @@ const checkDead = (position) => {
       })
     })
     document.getElementById('lose').style.visibility = 'visible';
+    LOSE = true;
   }
 
 }
@@ -289,9 +291,9 @@ const keySpace = fromEvent(document, 'keydown').pipe(
 
 keySpace.subscribe(() => {
   console.info("space")
-  if (!PAUSE) {
+  if (!PAUSE && !LOSE) {
     pauseGame();
-  }else{
+  }else if (PAUSE && !LOSE){
     resumeGame();
   }
 });
