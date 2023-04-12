@@ -1,3 +1,7 @@
+const PROBABILITY = 0.4
+
+const {interval, timeInterval, fromEvent, filter} = rxjs;
+
 const MAP = [
   [".",".",".",".","x",".",".",".",".",".",".",".",".","x",".",".",".","."],
   [".","x","x",".","x",".","x","x","x","x","x","x",".","x",".","x","x","."],
@@ -22,16 +26,35 @@ const POSHEIGHT = Math.floor(MAPHEIGHT / 9)
 const getXPixPos = (x) => (x) * POSWIDTH // de 0 a 17
 const getYPixPos = (y) => (y) * POSHEIGHT // de 0 a 8
 
-// posicion del pacman (indices de la matriz)
-let pacX = getXPixPos(5)
-let pacY = getYPixPos(5)
+const PlayerA = {
+  position:{
+    pacMatrixX : 10,
+    pacMatrixY : 0,
+    pacXMove : 0,
+    pacYMove : 1,
+    pacX : getXPixPos(10),
+    pacY : getYPixPos(0),
+  },
+  controls:[
+  {key:'ArrowDown', x:0, y:1}, 
+  {key:'ArrowUp', x:0, y:-1}, 
+  {key:'ArrowLeft', x:-1, y:0}, 
+  {key:'ArrowRight', x:1, y:0}
+]}
 
+const Players = [PlayerA]
+
+let ghostMatrixX = 0;
+let ghostMatrixY = 0;
+let ghostXMove = 1;
+let ghostYMove = 0;
+let ghostX = getXPixPos(ghostMatrixX);
+let ghostY = getYPixPos(ghostMatrixY);
 
 const drawDot = (y, x) => {
   // crea un punto en la posicion x, y
   const centerX = getXPixPos(x) + POSWIDTH/2
   const centerY = getYPixPos(y) + POSHEIGHT/2
-  console.log(centerX, centerY)
   const radius = 7;
   context.beginPath();
   context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
@@ -44,35 +67,161 @@ const drawDot = (y, x) => {
 
 const drawDots = () => {
   // crea un punto en el tablero si hay uno en MAP en la posicion correspondiente
-  for (let y = 0; y <= 8; y++) {
-    for (let x = 0; x <= 17; x++) {
-      if (MAP[y][x] == '.') {
+  MAP.forEach((row, y) => {
+    row.forEach((col, x) => {
+      if (col == ".") {
         drawDot(y, x);
       }
-    }
+    });
+  });
+};
+
+const base_image_pac = new Image(1, 1);
+base_image_pac.src = "pacman.png";
+
+const drawPacman = () => {
+  Players.forEach((player) => {
+    const {pacX, pacY} = player.position
+    context.drawImage(base_image_pac, pacX + 10, pacY + 10, 30, 30);
+  })
+};
+
+const base_image_ghost = new Image(1, 1);
+base_image_ghost.src = "ghost.png";
+
+const drawGhost = () => {
+  context.drawImage(base_image_ghost, ghostX + 5, ghostY + 10, 30, 30);
+};
+
+const update = () => {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  drawDots();
+  drawPacman();
+  drawGhost();
+  // en cada frame, modificar las variables pacX, pacY para mover el pacman.
+  // para poner/esconder un punto, modificar MAP
+};
+
+update();
+let PAUSE = false
+const time = interval(1000); // emits a value every second
+const interal = time.pipe(timeInterval()); // adds timestamp to each emitted value
+
+const moveGhost = () => {
+  ghostX = getXPixPos(ghostMatrixX);
+  ghostY = getYPixPos(ghostMatrixY);
+  ghostMatrixX += 1 * ghostXMove;
+  ghostMatrixY += 1 * ghostYMove;
+  update();
+}
+
+let ghostSub = interal.subscribe((value) => {
+  moveGhost()
+});
+
+interal.subscribe(() => {
+  const list = [-1, 0, 1].sort((a, b) => 0.5 - Math.random());
+  list.forEach((x) => {
+    list.forEach((y) => {
+
+      j = Math.random(1) ? x : y;
+      i = j === x ? y : x;
+
+      const nextX = ghostMatrixX + 1 * j;
+      const nextY = ghostMatrixY + 1 * i;
+      
+        if (i !== ghostYMove && j!== ghostXMove && i!== j ) {
+
+          if (nextY >= 0 && nextY <= 8 && nextX >= 0 && nextX <= 17) {
+            if (MAP[nextY][nextX] !== "x") {
+              ghostXMove = j;
+              ghostYMove = i;
+              return            
+            }
+          }
+        }
+    });
+  });
+});
+
+
+const movePac = (x, y, position) =>{
+  const nextX = position.pacMatrixX + 1 * x;
+  const nextY = position.pacMatrixY + 1 * y;
+
+  if (MAP[nextY][nextX]=== "x" || MAP[nextY][nextX]=== undefined || nextY < 0 || nextY > 8 || nextX < 0 && nextX > 17) {
+    return
+  }
+  position.pacMatrixX  = nextX;
+  position.pacMatrixY = nextY;
+  position.pacX = getXPixPos(position.pacMatrixX);
+  position.pacY = getYPixPos(position.pacMatrixY);
+  update();
+}
+
+const eatDot = (position) => {
+  if (MAP[position.pacMatrixY][position.pacMatrixX]=== ".") {
+    MAP[position.pacMatrixY][position.pacMatrixX] = " ";
+  };
+  update();
+}
+
+const checkDead = (position) => {
+  if (position.pacMatrixX === ghostMatrixX && position.pacMatrixY === ghostMatrixY) {
+    ghostSub.unsubscribe();
+    Players.forEach((player) => {
+      player.controls.forEach((control) => {
+        control.sub.unsubscribe();
+      })
+    })
   }
 }
 
-const drawPacman = () => {
-  // dibuja al pacman en la posicion dada por las variables pacX y pacY
-  context.beginPath();
-  context.arc(pacX + POSWIDTH/2, pacY + POSHEIGHT/2, 15, 0.25 * Math.PI, 1.75 * Math.PI);
-  context.lineTo(pacX + POSWIDTH/2, pacY + POSHEIGHT/2);
-  context.fillStyle = 'yellow';
-  context.fill();
+const keyEvent = (control, position) => {
+  const keyPress = fromEvent(document, 'keydown').pipe(
+    filter((event) => event.key === control.key),
+  );
+  const keySub = keyPress.subscribe(() => {
+    movePac(control.x,control.y, position)
+    eatDot(position);
+    checkDead(position);
+  }); 
+  return keySub
 }
 
-const update = () => {
-  drawDots();
-  drawPacman();
-  // en cada frame, modificar las variables pacX, pacY para mover el pacman.
-  // para poner/esconder un punto, modificar MAP
-}
+Players.forEach((player) => {
+  const {position, controls} = player
+  console.info(player, controls)
+  controls.forEach((control, index) => { 
+  player.controls[index].sub = keyEvent(control, position);
+ })
+})
 
-setInterval(update, 1000 / 30); // esto actualiza puntos y pacman 60 veces por segundo
+const keySpace = fromEvent(document, 'keydown').pipe(
+  filter((event) => event.keyCode === 32),
+);
 
+keySpace.subscribe(() => {
+  console.info("space")
+  if (!PAUSE) {
+    ghostSub.unsubscribe();
+    Players.forEach((player) => {
+      player.controls.forEach((control) => {
+        control.sub.unsubscribe();
+      })
+    })
+    PAUSE = true;
+  }else{
+    ghostSub = interal.subscribe((value) => {
+      moveGhost()   
+    });
 
-
-
-
-
+    Players.forEach((player) => {
+      const {position, controls} = player
+      controls.forEach((control, index) => { 
+      player.controls[index].sub = keyEvent(control, position);
+     })
+    })
+    PAUSE = false;
+  }
+});
