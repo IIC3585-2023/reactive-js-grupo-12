@@ -168,10 +168,10 @@ let LOSE = false;
 // tambien es un observable
 
 const moveGhost = () => {
-  ghostX = getXPixPos(ghostMatrixX);
-  ghostY = getYPixPos(ghostMatrixY);
   ghostMatrixX += 1 * ghostXMove;
   ghostMatrixY += 1 * ghostYMove;
+  ghostX = getXPixPos(ghostMatrixX);
+  ghostY = getYPixPos(ghostMatrixY);
   update();
 };
 
