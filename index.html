@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pacman</title>
+    <script src="https://unpkg.com/rxjs@^7/dist/bundles/rxjs.umd.min.js"></script>
+  </head>
+  <body>
+      <div class="header">
+        <h1>PACMAN</h1>
+        <h2 id="pause">Paused</h2>
+        <h2 id="lose">You lose!</h2>
+      </div>
+      <div class="map"></div>
+      <canvas id="map" width="840" height="450"></canvas>
+      <script type="text/javascript" src="main.js"></script>
+    </body>
+  <style>
+    .header {
+      height: 50px;
+      display: flex;
+      flex-direction: row;
+    }
+    h1 {
+      color: yellow;
+    }
+    #pause {
+      color: yellow;
+      margin-left: 50px;
+      visibility: hidden;
+    }
+    #lose {
+      color: yellow;
+      margin-left: 50px;
+      visibility: hidden;
+    }
+    body {
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+      background-color: black;
+      color: white;
+    }
+    #map {
+      position: absolute;
+      top: 70px;
+      background-image: url("map.jpeg");
+      background-repeat: no-repeat;
+      background-size: contain;
+      padding: 25px 20px 20px 20px;
+    }
+  </style>
+</html>
